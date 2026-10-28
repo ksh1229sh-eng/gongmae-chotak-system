@@ -53,7 +53,11 @@ export function judgeEntries(entries: Entry[]): { base: Entry | null; judged: Ju
   const alive = entries.filter((e) => !e.cancelled && !e.supplementary);
   const extinguished = alive.filter((e) => {
     const p = compact(e.purpose);
-    return !isOwnershipRecord(p) && !/공매공고/.test(p) && ALWAYS_EXTINGUISHED.some((r) => r.test(p));
+    return (
+      !isOwnershipRecord(p) &&
+      !/공매공고|말소$|변경$|경정$/.test(p) &&
+      ALWAYS_EXTINGUISHED.some((r) => r.test(p))
+    );
   });
   const base = [...extinguished].sort(compareOrder)[0] ?? null;
 

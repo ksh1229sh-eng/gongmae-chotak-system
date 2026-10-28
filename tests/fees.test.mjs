@@ -69,6 +69,21 @@ test("말소 기록이 가리키는 등기는 말소된 것으로 처리", () =>
   assert.equal(judged.filter((j) => j.judgement === "cancel").length, 1);
 });
 
+test("말소 기록 줄은 말소기준권리가 되지 않음", () => {
+  const { base, judged } = judgeEntries(
+    applyCancellationRecords([
+      entry("을구", "2", "근저당권설정", "2013-06-03", 8800),
+      entry("을구", "3", "2번근저당권설정등기말소", "2016-02-02", 1200),
+      entry("을구", "4", "전세권설정", "2016-05-05", 3000),
+      entry("을구", "5", "근저당권설정", "2016-07-07", 9900),
+    ]),
+  );
+  assert.equal(base.rank, "5");
+  // 말소 기록과 실제 기준권리 사이의 전세권은 인수 가능
+  assert.equal(judged[2].judgement, "assume");
+  assert.equal(judged.filter((j) => j.judgement === "cancel").length, 1);
+});
+
 test("같은 날 접수는 접수번호로 순서 비교", () => {
   const { judged } = judgeEntries([
     entry("을구", "1", "지상권설정", "2020-01-01", 5),
