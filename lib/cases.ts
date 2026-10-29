@@ -113,6 +113,31 @@ export function nextTask<T extends TaskLike>(tasks: T[], today: string): T | nul
   return sortByUrgency(openTasks(tasks), today)[0] ?? null;
 }
 
+// 인수인계 화면: 미처리 사건을 "가장 급한 할 일" 기준으로 정렬합니다.
+// 지연 → 임박 → 여유 → 기한 없는 할 일만 남음 → 남은 할 일이 없음(종결만 하면 됨) 순이고,
+// 같은 무리 안에서는 기한이 이른 사건이 위로 옵니다. 그 밖의 순서는 원래대로 유지합니다.
+export function sortCasesByUrgency<T extends { tasks: TaskLike[] }>(cases: T[], today: string): T[] {
+  const NO_TASK = 4;
+  const rank = (c: T) => {
+    const next = nextTask(c.tasks, today);
+    if (!next) return { group: NO_TASK, due: "" };
+    return { group: LEVEL_ORDER[alertLevel(next.due_on, today)], due: next.due_on ?? "" };
+  };
+  return [...cases].sort((a, b) => {
+    const ra = rank(a);
+    const rb = rank(b);
+    if (ra.group !== rb.group) return ra.group - rb.group;
+    if (ra.due && rb.due && ra.due !== rb.due) return ra.due < rb.due ? -1 : 1;
+    return 0;
+  });
+}
+
+// 메모 앞부분만 한 줄로 보여 줍니다 (줄바꿈·겹친 띄어쓰기는 하나로, 길면 …으로 자름).
+export function previewText(text: string, max = 100): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max).trimEnd()}…` : flat;
+}
+
 // 남은 할 일이 하나라도 있으면 종결할 수 없습니다. (임차권 말소 등 추가 말소 누락 방지)
 export function canClose(tasks: TaskLike[]): { ok: boolean; remaining: number } {
   const remaining = openTasks(tasks).length;

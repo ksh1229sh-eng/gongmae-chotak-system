@@ -11,8 +11,10 @@ import {
   isStage,
   nextTask,
   planSendDeadline,
+  previewText,
   sendDeadline,
   sortByUrgency,
+  sortCasesByUrgency,
   stageLabel,
   todayKST,
 } from "../lib/cases.ts";
@@ -78,6 +80,39 @@ test("정렬: 지연(오래된 것부터) → 임박(가까운 것부터) → �
     sorted.map((t) => t.title),
     ["지연-오래됨", "지연-최근", "임박-가까운", "임박-먼", "여유", "기한없음"],
   );
+});
+
+test("인수인계 정렬: 가장 급한 할 일 기준, 할 일이 없는 사건은 맨 끝", () => {
+  const c = (name, tasks) => ({ name, tasks });
+  const sorted = sortCasesByUrgency(
+    [
+      c("할일없음", []),
+      c("모두완료", [task("끝", "2026-10-01", true)]),
+      c("여유", [task("a", "2026-12-01")]),
+      c("기한없는할일", [task("b", null)]),
+      c("임박-먼", [task("c", "2026-11-04")]),
+      c("지연-최근", [task("d", "2026-10-27")]),
+      c("임박-가까운", [task("e", "2026-10-30"), task("f", "2026-10-01", true)]),
+      c("지연-오래됨+여유", [task("g", "2026-12-25"), task("h", "2026-10-01")]),
+    ],
+    TODAY,
+  );
+  assert.deepEqual(
+    sorted.map((x) => x.name),
+    ["지연-오래됨+여유", "지연-최근", "임박-가까운", "임박-먼", "여유", "기한없는할일", "할일없음", "모두완료"],
+  );
+  // 입력 배열은 바꾸지 않는다
+  const original = [c("b", []), c("a", [task("x", "2026-10-01")])];
+  sortCasesByUrgency(original, TODAY);
+  assert.deepEqual(original.map((x) => x.name), ["b", "a"]);
+});
+
+test("메모 앞부분: 줄바꿈·겹친 공백을 한 줄로 합치고 길면 …으로 자름", () => {
+  assert.equal(previewText("보완서류\n  재접수   확인"), "보완서류 재접수 확인");
+  assert.equal(previewText("  "), "");
+  assert.equal(previewText("가".repeat(100)), "가".repeat(100));
+  assert.equal(previewText("가".repeat(101)), `${"가".repeat(100)}…`);
+  assert.equal(previewText("나다라마바사", 3), "나다라…");
 });
 
 test("종결: 남은 할 일이 하나라도 있으면 불가, 모두 완료하면 가능", () => {
