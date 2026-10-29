@@ -59,16 +59,24 @@ export function sendDeadline(docsReceivedOn: string): string {
 
 type SendDeadlineTask = TaskLike & { id: string; auto_kind: string | null };
 
-// 서류 접수일을 넣거나 고칠 때 "촉탁서 발송 기한" 할 일을 어떻게 할지 정합니다. (사건당 1개)
+// 서류 접수일을 넣거나 고치거나 비울 때 "촉탁서 발송 기한" 할 일을 어떻게 할지 정합니다. (사건당 1개)
 // - 아직 없으면 새로 만들고, 있는데 기한이 다르면 기한을 고치며 다시 미완료로 돌립니다 (접수일이 바뀌면 새 기한이 생긴 것).
 // - 이미 같은 기한이면 아무것도 하지 않습니다.
+// - 접수일을 비우면 기준이 사라진 것이므로, 아직 안 끝낸 자동 할 일은 지웁니다. 안 지우면 옛 기한이 계속 '지연'으로 뜨고 종결도 막습니다.
+//   이미 완료한 것은 처리 기록이라 그대로 둡니다.
 export function planSendDeadline(
   docsReceivedOn: string | null,
   tasks: SendDeadlineTask[],
-): { action: "none" } | { action: "create"; due_on: string } | { action: "update"; id: string; due_on: string } {
-  if (!docsReceivedOn) return { action: "none" };
-  const due_on = sendDeadline(docsReceivedOn);
+):
+  | { action: "none" }
+  | { action: "create"; due_on: string }
+  | { action: "update"; id: string; due_on: string }
+  | { action: "delete"; id: string } {
   const existing = tasks.find((t) => t.auto_kind === "send_deadline");
+  if (!docsReceivedOn) {
+    return existing && !existing.done_at ? { action: "delete", id: existing.id } : { action: "none" };
+  }
+  const due_on = sendDeadline(docsReceivedOn);
   if (!existing) return { action: "create", due_on };
   if (existing.due_on === due_on) return { action: "none" };
   return { action: "update", id: existing.id, due_on };

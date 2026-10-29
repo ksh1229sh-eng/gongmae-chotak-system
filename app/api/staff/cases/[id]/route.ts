@@ -32,10 +32,10 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/staff/case
         ? Response.json({ error: "종결된 사건은 메모만 보충할 수 있습니다." }, { status: 409 })
         : NOT_FOUND();
     }
-    // 서류 접수일을 넣거나 고쳤으면 "촉탁서 발송 기한" 할 일을 만들거나 기한을 갱신합니다. (종결 사건은 제외)
+    // 서류 접수일을 넣거나 고치거나 비웠으면 "촉탁서 발송 기한" 할 일을 만들거나 기한을 갱신하거나 정리합니다. (종결 사건은 제외)
     const warning =
-      parsed.data.docs_received_on && !updated.closed_at
-        ? await syncSendDeadline(id, parsed.data.docs_received_on)
+      "docs_received_on" in parsed.data && !updated.closed_at
+        ? await syncSendDeadline(id, parsed.data.docs_received_on ?? null)
         : null;
     return Response.json({ case: updated, ...(warning ? { warning } : {}) });
   } catch (error) {

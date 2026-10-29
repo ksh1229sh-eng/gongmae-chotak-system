@@ -32,7 +32,7 @@ export default function ReceivedDate({ caseId, value, closed }: { caseId: string
             className={`${INPUT} block sm:w-48`}
           />
           <p className="text-xs text-zinc-500">
-            접수일을 바꾸면 촉탁서 발송 기한(접수일 + 7일)이 새로 계산되고, 완료한 발송 기한 할 일은 다시 미완료가 됩니다.
+            접수일을 바꾸면 촉탁서 발송 기한(접수일 + 7일)이 새로 계산되고, 완료한 발송 기한 할 일은 다시 미완료가 됩니다. 접수일을 비우면 아직 끝내지 않은 발송 기한 할 일은 함께 지워집니다.
           </p>
           <div className="flex gap-2">
             <button type="button" onClick={save} disabled={busy} className={BUTTON}>

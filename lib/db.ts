@@ -133,6 +133,10 @@ export async function createTask(caseId: string, input: TaskInput): Promise<Task
   return rows[0];
 }
 
+export async function deleteTask(id: string): Promise<void> {
+  await rest(`tasks?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 // 할 일 하나와 소속 사건의 종결 여부 (종결된 사건의 할 일은 바꾸지 못하게 할 때 씁니다)
 export async function getTask(id: string): Promise<(TaskRow & { cases: Pick<CaseRow, "id" | "closed_at"> }) | null> {
   const rows = await rest<(TaskRow & { cases: Pick<CaseRow, "id" | "closed_at"> })[]>(

@@ -39,14 +39,18 @@ test("촉탁서 발송 기한 = 서류 접수일 + 7일", () => {
   assert.equal(sendDeadline("2026-10-13"), "2026-10-20");
 });
 
-test("발송 기한 할 일: 없으면 만들고, 접수일이 바뀌면 기한 갱신, 같으면 그대로, 접수일이 없으면 손대지 않음", () => {
+test("발송 기한 할 일: 없으면 만들고, 접수일이 바뀌면 기한 갱신, 같으면 그대로, 접수일을 비우면 안 끝낸 자동 할 일만 지움", () => {
   const auto = (due_on, done = false) => ({ id: "t1", title: "촉탁서 발송 기한", due_on, done_at: done ? "x" : null, auto_kind: "send_deadline" });
   const manual = { id: "t2", title: "직접 만든 할 일", due_on: "2026-10-01", done_at: null, auto_kind: null };
   assert.deepEqual(planSendDeadline("2026-10-13", []), { action: "create", due_on: "2026-10-20" });
   assert.deepEqual(planSendDeadline("2026-10-13", [manual]), { action: "create", due_on: "2026-10-20" });
   assert.deepEqual(planSendDeadline("2026-10-13", [auto("2026-10-20")]), { action: "none" });
   assert.deepEqual(planSendDeadline("2026-10-15", [auto("2026-10-20", true)]), { action: "update", id: "t1", due_on: "2026-10-22" });
-  assert.deepEqual(planSendDeadline(null, [auto("2026-10-20")]), { action: "none" });
+  assert.deepEqual(planSendDeadline(null, []), { action: "none" });
+  assert.deepEqual(planSendDeadline(null, [manual]), { action: "none" }); // 직접 만든 할 일은 건드리지 않음
+  // 접수일을 비우면 아직 안 끝낸 자동 할 일만 지우고, 이미 완료한 것은 기록으로 남김
+  assert.deepEqual(planSendDeadline(null, [auto("2026-10-20")]), { action: "delete", id: "t1" });
+  assert.deepEqual(planSendDeadline(null, [auto("2026-10-20", true)]), { action: "none" });
 });
 
 test("알림 경계: 어제 지연, 오늘~7일 뒤 임박, 8일 뒤 여유, 기한 없음", () => {
