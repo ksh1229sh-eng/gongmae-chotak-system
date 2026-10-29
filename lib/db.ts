@@ -105,6 +105,15 @@ export async function updateCase(id: string, patch: CaseInput & Partial<Pick<Cas
   return rows[0] ?? null;
 }
 
+// 사건 종결. 아직 진행 중일 때만 종결하고, 이미 종결됐으면 null을 돌려줍니다 (두 번 눌러도 종결 시각이 바뀌지 않게).
+export async function closeCase(id: string): Promise<CaseRow | null> {
+  const rows = await rest<CaseRow[]>(`cases?id=eq.${encodeURIComponent(id)}&closed_at=is.null`, {
+    method: "PATCH",
+    body: { closed_at: new Date().toISOString() },
+  });
+  return rows[0] ?? null;
+}
+
 // ── 할 일 ──
 
 export async function createTask(caseId: string, input: TaskInput): Promise<TaskRow> {
