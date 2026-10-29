@@ -106,7 +106,11 @@ async function CasesContent({ searchParams }: { searchParams: PageProps<"/staff/
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-zinc-200 dark:border-zinc-700">
-                  <td className="py-2 pr-3 font-medium">{r.caseNo}</td>
+                  <td className="py-2 pr-3 font-medium">
+                    <Link href={`/staff/cases/${r.id}`} className="underline-offset-2 hover:underline">
+                      {r.caseNo}
+                    </Link>
+                  </td>
                   <td className="py-2 pr-3">{r.summary}</td>
                   <td className="py-2 pr-3">{r.stage}</td>
                   <td className="py-2 pr-3 text-right">{r.remaining}건</td>
@@ -120,7 +124,9 @@ async function CasesContent({ searchParams }: { searchParams: PageProps<"/staff/
             {rows.map((r) => (
               <li key={r.id} className="space-y-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-medium">{r.caseNo}</span>
+                  <Link href={`/staff/cases/${r.id}`} className="font-medium underline-offset-2 hover:underline">
+                    {r.caseNo}
+                  </Link>
                   <span className="text-zinc-500">{r.stage}</span>
                 </div>
                 <p>{r.summary}</p>

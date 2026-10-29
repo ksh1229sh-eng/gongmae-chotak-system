@@ -4,13 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import LogoutButton from "./LogoutButton";
-
-const MENU = [
-  { href: "/staff", label: "알림", exact: true },
-  { href: "/staff/cases", label: "사건" },
-  { href: "/staff/handover", label: "인수인계" },
-  { href: "/staff/manual", label: "매뉴얼" },
-];
+import { MENU } from "./menu";
 
 export default function StaffNav({ alertCount }: { alertCount: number | null }) {
   const pathname = usePathname();
