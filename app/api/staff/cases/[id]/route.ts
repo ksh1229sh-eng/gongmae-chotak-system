@@ -17,22 +17,21 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/staff/cases
 }
 
 // 사건 수정: 관리번호·물건 요약·서류 접수일·메모·진행 단계 중 보낸 칸만 고칩니다.
-// 진행 단계는 종결된 사건에서는 바꿀 수 없습니다. 종결은 PLAN 14번 API에서 다룹니다.
+// 종결된 사건은 메모만 보충할 수 있고, 다른 칸을 보내면 거절합니다. (화면도 같은 규칙입니다)
 export async function PATCH(request: Request, ctx: RouteContext<"/api/staff/cases/[id]">) {
   const { id } = await ctx.params;
   if (!isUuid(id)) return NOT_FOUND();
   const parsed = parseCaseInput(await request.json().catch(() => null), "update");
   if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+  const memoOnly = Object.keys(parsed.data).every((key) => key === "memo");
   try {
-    if (parsed.data.stage) {
-      const current = await getCase(id);
-      if (!current) return NOT_FOUND();
-      if (current.closed_at) {
-        return Response.json({ error: "종결된 사건은 진행 단계를 바꿀 수 없습니다." }, { status: 409 });
-      }
+    const updated = await updateCase(id, parsed.data, { onlyOpen: !memoOnly });
+    if (!updated) {
+      // 없는 사건이거나(404), 종결돼서 메모 외 칸을 고칠 수 없는 경우(409)
+      return (await getCase(id))
+        ? Response.json({ error: "종결된 사건은 메모만 보충할 수 있습니다." }, { status: 409 })
+        : NOT_FOUND();
     }
-    const updated = await updateCase(id, parsed.data);
-    if (!updated) return NOT_FOUND();
     // 서류 접수일을 넣거나 고쳤으면 "촉탁서 발송 기한" 할 일을 만들거나 기한을 갱신합니다. (종결 사건은 제외)
     const warning =
       parsed.data.docs_received_on && !updated.closed_at

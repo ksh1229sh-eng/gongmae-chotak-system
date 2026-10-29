@@ -100,8 +100,16 @@ export async function createCase(input: CaseInput & Pick<CaseRow, "case_no">): P
   return rows[0];
 }
 
-export async function updateCase(id: string, patch: CaseInput & Partial<Pick<CaseRow, "closed_at">>): Promise<CaseRow | null> {
-  const rows = await rest<CaseRow[]>(`cases?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: patch });
+// onlyOpen이면 아직 종결되지 않은 사건만 고칩니다. 확인과 수정이 한 번에 처리돼서, 그 사이에 종결돼도 고쳐지지 않습니다.
+export async function updateCase(
+  id: string,
+  patch: CaseInput & Partial<Pick<CaseRow, "closed_at">>,
+  options: { onlyOpen?: boolean } = {},
+): Promise<CaseRow | null> {
+  const rows = await rest<CaseRow[]>(`cases?id=eq.${encodeURIComponent(id)}${options.onlyOpen ? "&closed_at=is.null" : ""}`, {
+    method: "PATCH",
+    body: patch,
+  });
   return rows[0] ?? null;
 }
 
