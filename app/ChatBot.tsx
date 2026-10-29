@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import RegistryResult, { type RegistryResultData } from "./RegistryResult";
 
@@ -109,7 +110,16 @@ export default function ChatBot() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-6">
       <header className="mb-4 space-y-1">
-        <h1 className="text-xl font-bold">공매 소유권이전 상담 챗봇</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-bold">공매 소유권이전 상담 챗봇</h1>
+          {/* 담당자 화면 입구: 링크만 보이고, 들어가려면 공용 비밀번호가 필요합니다. */}
+          <Link
+            href="/staff"
+            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
+          >
+            담당자 화면 →
+          </Link>
+        </div>
         <p className="text-sm text-zinc-500">
           한국자산관리공사 「압류재산 소유권이전 준비서류 및 절차 안내」만 근거로 답합니다. 부동산 공매만 안내해요.
         </p>
