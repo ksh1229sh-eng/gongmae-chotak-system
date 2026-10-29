@@ -1,10 +1,12 @@
 import { GUIDE_PAGES, GUIDE_TITLE } from "@/lib/guide";
 import { CHAT_MODEL, errorResponse, openaiFetch } from "@/lib/openai";
+import { limitOrNull } from "@/lib/rate-limit";
 
 type Turn = { role: "user" | "assistant"; content: string };
 
 const MAX_QUESTION = 1000;
 const MAX_HISTORY = 6;
+const MAX_ANSWER_TOKENS = 1000; // 답변은 500자 이내가 규칙이라, 규칙을 어겨도 서버가 길이를 끊습니다.
 
 // 쪽 경계가 흐려 근거 쪽을 잘못 붙이는 일이 잦아서, 모든 줄 앞에 [p.N]을 달아 그대로 옮겨 쓰게 합니다.
 const GUIDE_TEXT = GUIDE_PAGES.map((p) =>
@@ -63,10 +65,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
+  const limited = await limitOrNull(request, "chat");
+  if (limited) return limited;
+
   let upstream: Response;
   try {
     upstream = await openaiFetch("/chat/completions", {
       model: CHAT_MODEL,
+      max_tokens: MAX_ANSWER_TOKENS,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...history.slice(-MAX_HISTORY),

@@ -7,9 +7,12 @@ import {
   type Entry,
 } from "@/lib/fees";
 import { REGISTRY_MODEL, errorResponse, openaiFetch } from "@/lib/openai";
+import { limitOrNull } from "@/lib/rate-limit";
 
 const MAX_FILES = 5;
 const MAX_TOTAL_BYTES = 4 * 1024 * 1024; // Vercel 요청 크기 제한(4.5MB) 안쪽
+const MAX_FILE_BYTES = 2 * 1024 * 1024; // 등기부 한 통은 보통 1MB 미만이라, 큰 파일 하나로 비용이 커지는 것을 막음
+const MAX_EXTRACT_TOKENS = 8000; // 권리 목록 JSON이 끝없이 길어지는 것을 막음
 
 // AI는 권리 목록만 읽어 옵니다. 이름·주소 칸은 스키마에 아예 없습니다.
 const EXTRACT_PROMPT = `첨부한 PDF는 대한민국 부동산 등기사항전부증명서입니다. 아래 항목만 읽어 JSON으로 돌려주세요.
@@ -62,6 +65,7 @@ async function extract(file: File): Promise<Extracted> {
   const res = await openaiFetch("/chat/completions", {
     model: REGISTRY_MODEL,
     temperature: 0,
+    max_tokens: MAX_EXTRACT_TOKENS,
     response_format: {
       type: "json_schema",
       json_schema: { name: "registry_entries", strict: true, schema: SCHEMA },
@@ -98,6 +102,12 @@ export async function POST(request: Request) {
   if (files.reduce((sum, f) => sum + f.size, 0) > MAX_TOTAL_BYTES) {
     return Response.json({ error: "첨부 파일은 합계 4MB 이하만 가능합니다." }, { status: 400 });
   }
+  if (files.some((f) => f.size > MAX_FILE_BYTES)) {
+    return Response.json({ error: "PDF 한 개는 2MB 이하만 가능합니다." }, { status: 400 });
+  }
+
+  const limited = await limitOrNull(request, "registry");
+  if (limited) return limited;
 
   let extracted: Extracted[];
   try {

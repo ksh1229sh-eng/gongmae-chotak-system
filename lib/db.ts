@@ -154,6 +154,30 @@ export async function recordLoginFailure(ipHash: string): Promise<void> {
   await rest("login_attempts", { method: "POST", body: { ip_hash: ipHash } });
 }
 
+// ── 공개 API 사용 기록 (남용 방지용 횟수 제한) ──
+
+export type UsageKind = "chat" | "registry";
+
+// 먼저 기록한 뒤, 창 안에서 자기보다 앞선 기록 수를 세어 "몇 번째 사용인지"를 돌려줍니다.
+// 동시에 여러 요청이 와도 각자 순번이 달라서, 앞의 한도만큼만 통과합니다. (시각이 같으면 id 순)
+export async function recordUsageAndCount(ipHash: string, kind: UsageKind, sinceIso: string): Promise<number> {
+  const [mine] = await rest<{ id: string; used_at: string }[]>("api_usage", {
+    method: "POST",
+    body: { ip_hash: ipHash, kind },
+  });
+  const at = encodeURIComponent(mine.used_at);
+  const rows = await rest<{ id: string }[]>(
+    `api_usage?select=id&ip_hash=eq.${encodeURIComponent(ipHash)}&kind=eq.${kind}&used_at=gte.${encodeURIComponent(sinceIso)}` +
+      `&or=(used_at.lt.${at},and(used_at.eq.${at},id.lte.${mine.id}))`,
+  );
+  return rows.length;
+}
+
+// 오래된 기록은 표가 커지지 않게 지웁니다.
+export async function deleteOldUsage(beforeIso: string): Promise<void> {
+  await rest(`api_usage?used_at=lt.${encodeURIComponent(beforeIso)}`, { method: "DELETE" });
+}
+
 // API에서 쓰는 공통 오류 응답 (lib/openai.ts의 errorResponse와 같은 형식)
 export function dbErrorResponse(error: unknown) {
   if (error instanceof MissingDbConfigError) {
