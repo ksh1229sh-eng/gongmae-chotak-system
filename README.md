@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 공매촉탁업무통합관리시스템
 
-## Getting Started
+한국자산관리공사(캠코) **압류재산(부동산) 공매의 소유권이전 촉탁 업무**를 돕는 웹 앱입니다.
+매수자는 챗봇으로 절차와 비용을 스스로 확인하고, 담당자는 사건을 하나도 놓치지 않고 후임자에게 바로 넘길 수 있게 하는 것이 목표입니다.
 
-First, run the development server:
+- 배포 주소: DEPLOY_URL_PLACEHOLDER
+- 기획서: [PRD.md](PRD.md) · 개발 계획: [PLAN.md](PLAN.md) · 설계서: [DESIGN.md](DESIGN.md) · 공개 전 점검 결과: [CHECK.md](CHECK.md)
+
+> 이 프로젝트는 공개된 안내문과 법령만을 근거로 하고, 실제 사건·실제 등기부 대신 가상 자료로 시험했습니다. 안내 결과는 참고용이며 법률 상담이 아닙니다.
+
+## 해결하려는 문제
+
+| 누가 | 불편 |
+|---|---|
+| 매수자 | 절차·비용 정보가 흩어져 같은 질문을 반복하고, 서류가 빠져 지연된다 |
+| 촉탁 담당자 | 추가 말소 같은 사후관리를 개인 메모에 의존해 누락 위험이 있다 |
+| 후임 담당자 | 담당자가 바뀌면 미처리 사건과 업무 방법을 처음부터 다시 파악해야 한다 |
+
+## 주요 기능
+
+### 1. 매수자 상담 챗봇 (`/`)
+
+- **안내문과 법령만 근거로 답변:** 한국자산관리공사 「압류재산 소유권이전 준비서류 및 절차 안내」(`docs/guide.pdf`)를 근거로 하고, 국민주택채권은 주택도시기금법 제8조·같은 법 시행령 별표 원문(`lib/law.ts`)도 근거로 씁니다. 근거 쪽 번호나 조문 이름을 답변에 표시하고, 근거가 없으면 지어내지 않고 공사 문의처를 안내합니다.
+- **등기부 비용 계산:** 등기사항전부증명서 PDF를 올리면 말소 대상 권리를 찾아 말소 등록면허세, 등기신청수수료를 계산하고, 시가표준액을 입력하면 국민주택채권 매입금액까지 계산합니다.
+- **AI는 읽기만, 계산은 코드가:** AI는 등기부에서 권리 목록(순위번호·등기목적·접수일 등)만 읽고 이름·주소는 읽지 않습니다. 말소 판단과 모든 금액 계산은 테스트된 코드(`lib/fees.ts`)가 합니다.
+
+### 2. 사건 사후관리·인수인계 (담당자용, `/staff`)
+
+공용 비밀번호로 보호되는 담당자 화면입니다.
+
+| 화면 | 하는 일 |
+|---|---|
+| 알림 | 기한이 지난 일(지연)과 7일 이내 일(임박)을 맨 위에 보여 줌 |
+| 사건 | 사건 등록, 진행 단계(서류 접수 → 보완 요청 → 촉탁서 발송 → 등기 완료), 할 일·기한, 메모, 종결 |
+| 인수인계 | 미처리 사건을 급한 순으로 모아 보고, 사건별 3줄 이내 AI 요약 생성 |
+| 매뉴얼 | 안내문 원문을 서류 준비·세금·우표·제출 등 주제별로 정리 |
+
+- 서류 접수일을 넣으면 "촉탁서 발송 기한(접수일 + 7일)" 할 일이 자동으로 만들어집니다.
+- 남은 할 일이 하나라도 있으면 사건을 종결할 수 없습니다(추가 말소 누락 방지). 이 규칙은 DB 트리거가 직접 지킵니다.
+- AI 요약은 사건마다 따로 만들고, 기록에 없는 날짜·숫자·지연/임박 표현이 나오면 코드가 걸러 냅니다.
+
+## 개인정보와 보안
+
+- 사건에는 매수자 이름·연락처·주민등록번호를 기록하지 않고(관리번호와 물건 요약만), 저장할 때와 AI로 보내기 전에 주민등록번호·전화번호 형태를 서버가 검사해 거부합니다.
+- 첨부한 등기부는 메모리에서만 쓰고 저장하지 않습니다.
+- 비밀 키는 서버 코드에서만 읽고 브라우저에는 보내지 않으며, `.env`는 저장소에 올리지 않습니다.
+- 공개 챗봇의 비용 남용을 접속지별 10분 한도와 하루 전체 상한으로 막고, 로그인은 15분에 5번 실패하면 15분 잠급니다.
+- 보안 헤더(CSP 등)를 모든 응답에 붙입니다. 점검 결과와 남은 항목은 [CHECK.md](CHECK.md)에 정리했습니다.
+
+## 기술 스택
+
+| 도구 | 역할 |
+|---|---|
+| Next.js 16 (App Router, TypeScript) | 화면과 서버 API |
+| Tailwind CSS 4 | 화면 꾸미기 (다크 모드 지원) |
+| OpenAI API | 챗봇 답변(`gpt-4o-mini`), 등기부 읽기(`gpt-4o`), 인수인계 요약 |
+| Supabase | 사건·할 일 저장 (서버 키로만 접근, RLS) |
+| Vercel | 배포 |
+
+## 직접 실행해 보기
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env   # 아래 값을 채웁니다 (.env는 저장소에 올라가지 않습니다)
+npm run dev            # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+필요한 환경 변수 (값은 직접 발급해 넣습니다):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 이름 | 용도 |
+|---|---|
+| `OPENAI_API_KEY` | OpenAI API 키 |
+| `STAFF_PASSWORD` | 담당자 화면 공용 비밀번호 |
+| `SESSION_SECRET` | 로그인 쿠키 서명용 무작위 문자열(32자 이상) |
+| `SUPABASE_URL` | Supabase 프로젝트 주소 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서버용 키 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+데이터베이스 표는 `supabase/migrations/`의 파일을 Supabase CLI로 적용해 만듭니다.
 
-## Learn More
+## 테스트와 품질
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm test               # 계산·규칙·보안 단위 테스트 (57개)
+npm run lint && npm run build
+npm run check:chat     # 챗봇 품질 점검 (서버를 띄운 뒤 실행)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 지표 | 목표 | 측정 결과 |
+|---|---|---|
+| 챗봇 정답률 | 90% 이상 | 96% (23문항 중 22) |
+| 근거 표시율 | 100% | 100% |
+| 응답 속도 | 10초 이내 | 최장 약 5초 |
+| 가상 등기부 계산 정확도 | 100% 일치 | 가상 등기부 5건 모두 일치 |
+| 사후관리 누락 | 0건 | 가상 사건 10건에서 0건 |
+| 국민주택채권 요율 | 법령과 일치 | 시행령 별표와 같음(테스트로 고정) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+AI 답변은 매번 조금씩 달라서 점수가 오르내릴 수 있습니다. 실제 등기부(취소선) 인식과 인수인계 10분 파악 시간은 아직 사람이 직접 확인하지 못했습니다.
 
-## Deploy on Vercel
+## 폴더 구조
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/            화면과 API (챗봇 /, 담당자 /staff, api/…)
+lib/            규칙과 서버 도우미 (fees·cases·privacy·law·rate-limit·db …)
+supabase/       데이터베이스 마이그레이션
+tests/          단위 테스트와 챗봇 질문 목록
+scripts/        챗봇·등기부 품질 점검 스크립트
+docs/guide.pdf  근거 안내문 원본
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 만든 방식
+
+기획서(PRD) → 개발 계획(PLAN) → 설계서(DESIGN) 순서로 문서를 먼저 쓰고, 작업마다 `lint·build·테스트 → 화면 확인 → 커밋`을 반복하는 검증 루프로 Claude Code와 함께 개발했습니다. 규칙은 [CLAUDE.md](CLAUDE.md)에 적어 두었습니다.
