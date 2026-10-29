@@ -65,9 +65,27 @@ export function hashIp(ip: string): string {
   return createHmac("sha256", signingKey()).update(`ip:${ip}`).digest("hex").slice(0, 32);
 }
 
+// IPv6는 한 사람이 /64 대역(앞 4묶음) 안의 주소를 사실상 마음대로 바꿀 수 있어서, 주소 하나하나가 아니라 /64를 한 접속지로 봅니다.
+// 그렇지 않으면 요청마다 주소를 바꿔 횟수 제한과 로그인 잠금을 모두 피할 수 있습니다. IPv4와 알 수 없는 모양은 그대로 둡니다.
+export function normalizeIp(ip: string): string {
+  const raw = ip.trim().replace(/^\[|\]$/g, "").split("%")[0];
+  if (!raw.includes(":")) return raw;
+  const mapped = raw.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i); // ::ffff:1.2.3.4 는 IPv4
+  if (mapped) return mapped[1];
+  if (raw.includes(".") || !/^[0-9a-f:]+$/i.test(raw) || (raw.match(/::/g) ?? []).length > 1) return raw;
+  const [head, tail] = raw.split("::");
+  const headGroups = head ? head.split(":") : [];
+  const tailGroups = tail === undefined ? [] : tail ? tail.split(":") : [];
+  const missing = 8 - headGroups.length - tailGroups.length;
+  if (tail === undefined ? headGroups.length !== 8 : missing < 1) return raw;
+  const groups = [...headGroups, ...Array(tail === undefined ? 0 : missing).fill("0"), ...tailGroups];
+  if (groups.length !== 8 || groups.some((g) => g.length < 1 || g.length > 4)) return raw;
+  return `${groups.slice(0, 4).map((g) => g.toLowerCase().padStart(4, "0")).join(":")}::/64`;
+}
+
 export function clientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown";
+  return normalizeIp(forwarded?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown");
 }
 
 export function sessionCookieOptions() {

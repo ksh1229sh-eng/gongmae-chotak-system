@@ -60,6 +60,9 @@ const SCHEMA = {
 
 type Extracted = { propertyType: string; sido: string; entries: Entry[] };
 
+// AI가 이 파일을 읽지 못한 경우 (거절·빈 응답·엉뚱한 모양)
+class UnreadableRegistryError extends Error {}
+
 async function extract(file: File): Promise<Extracted> {
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   const res = await openaiFetch("/chat/completions", {
@@ -84,7 +87,17 @@ async function extract(file: File): Promise<Extracted> {
     ],
   });
   const data = await res.json();
-  return JSON.parse(data.choices[0].message.content);
+  // AI가 읽기를 거절하거나(content가 비어 있고 refusal만 있음) 모양이 다른 답을 주면, 정상 결과인 척하지 않고 오류로 다룹니다.
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) throw new UnreadableRegistryError();
+  let parsed: Extracted;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new UnreadableRegistryError();
+  }
+  if (!parsed || !Array.isArray(parsed.entries) || typeof parsed.sido !== "string") throw new UnreadableRegistryError();
+  return parsed;
 }
 
 // 등기사항전부증명서 PDF를 받아 말소 대상과 비용을 계산합니다.
@@ -106,28 +119,44 @@ export async function POST(request: Request) {
     return Response.json({ error: "PDF 한 개는 2MB 이하만 가능합니다." }, { status: 400 });
   }
 
-  const limited = await limitOrNull(request, "registry");
+  const limited = await limitOrNull(request, "registry", files.length);
   if (limited) return limited;
 
   let extracted: Extracted[];
   try {
     extracted = await Promise.all(files.map(extract));
   } catch (error) {
+    if (error instanceof UnreadableRegistryError) {
+      return Response.json(
+        { error: "등기부를 읽지 못했습니다. 등기사항전부증명서 PDF가 맞는지 확인하고 다시 올려 주세요." },
+        { status: 422 },
+      );
+    }
     return errorResponse(error);
   }
 
-  const registries = extracted.map((x, i) => {
-    const { base, judged } = judgeEntries(applyCancellationRecords(x.entries));
-    return {
-      label: `등기부 ${i + 1}`,
-      propertyType: x.propertyType,
-      sido: x.sido,
-      metro: isMetroRegion(x.sido),
-      base: base ? { section: base.section, rank: base.rank, purpose: base.purpose } : null,
-      judged,
-      cancelCount: judged.filter((j) => j.judgement === "cancel").length,
-    };
-  });
+  // 읽어 온 값의 모양이 예상과 달라 계산 중에 오류가 나는 경우도 서버 오류가 아니라 "읽지 못함"으로 안내합니다.
+  let registries;
+  try {
+    registries = extracted.map((x, i) => {
+      const { base, judged } = judgeEntries(applyCancellationRecords(x.entries));
+      return {
+        label: `등기부 ${i + 1}`,
+        propertyType: x.propertyType,
+        sido: x.sido,
+        metro: isMetroRegion(x.sido),
+        base: base ? { section: base.section, rank: base.rank, purpose: base.purpose } : null,
+        judged,
+        cancelCount: judged.filter((j) => j.judgement === "cancel").length,
+      };
+    });
+  } catch (error) {
+    console.error("등기부 계산 실패", error instanceof Error ? error.message : error);
+    return Response.json(
+      { error: "등기부를 읽지 못했습니다. 등기사항전부증명서 PDF가 맞는지 확인하고 다시 올려 주세요." },
+      { status: 422 },
+    );
+  }
 
   if (registries.every((r) => r.judged.length === 0)) {
     return Response.json(

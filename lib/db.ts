@@ -197,17 +197,43 @@ export type UsageKind = "chat" | "registry";
 
 // 먼저 기록한 뒤, 창 안에서 자기보다 앞선 기록 수를 세어 "몇 번째 사용인지"를 돌려줍니다.
 // 동시에 여러 요청이 와도 각자 순번이 달라서, 앞의 한도만큼만 통과합니다. (시각이 같으면 id 순)
-export async function recordUsageAndCount(ipHash: string, kind: UsageKind, sinceIso: string): Promise<number> {
-  const [mine] = await rest<{ id: string; used_at: string }[]>("api_usage", {
+// units는 한 번에 쓰는 양입니다(등기부는 파일 한 개가 1). 돌려주는 순번은 그 요청의 마지막 몫의 순번입니다.
+export async function recordUsageAndCount(
+  ipHash: string,
+  kind: UsageKind,
+  sinceIso: string,
+  units = 1,
+): Promise<{ rank: number; ids: string[] }> {
+  const mine = await rest<{ id: string; used_at: string }[]>("api_usage", {
     method: "POST",
-    body: { ip_hash: ipHash, kind },
+    body: Array.from({ length: units }, () => ({ ip_hash: ipHash, kind })),
   });
-  const at = encodeURIComponent(mine.used_at);
+  const last = [...mine].sort((a, b) => (a.used_at === b.used_at ? a.id.localeCompare(b.id) : a.used_at.localeCompare(b.used_at))).at(-1)!;
+  const at = encodeURIComponent(last.used_at);
   const rows = await rest<{ id: string }[]>(
     `api_usage?select=id&ip_hash=eq.${encodeURIComponent(ipHash)}&kind=eq.${kind}&used_at=gte.${encodeURIComponent(sinceIso)}` +
-      `&or=(used_at.lt.${at},and(used_at.eq.${at},id.lte.${mine.id}))`,
+      `&or=(used_at.lt.${at},and(used_at.eq.${at},id.lte.${last.id}))`,
   );
-  return rows.length;
+  return { rank: rows.length, ids: mine.map((m) => m.id) };
+}
+
+// 접속지와 상관없이 그 종류의 전체 사용량 (하루 전체 상한 확인용). 줄을 내려받지 않고 개수만 받습니다.
+export async function countUsageSince(kind: UsageKind, sinceIso: string): Promise<number> {
+  const { url, key } = config();
+  const res = await fetch(`${url}/rest/v1/api_usage?select=id&kind=eq.${kind}&used_at=gte.${encodeURIComponent(sinceIso)}`, {
+    method: "HEAD",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: "count=exact", Range: "0-0" },
+    cache: "no-store",
+  });
+  const total = Number(res.headers.get("content-range")?.split("/")[1]);
+  if ((!res.ok && res.status !== 206) || !Number.isFinite(total)) throw new Error(`사용량 개수를 읽지 못했습니다 (${res.status})`);
+  return total;
+}
+
+// 거절한 요청이 남긴 기록은 지워서, 거절된 시도가 다음 정상 사용의 몫을 깎지 않게 합니다.
+export async function deleteUsage(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await rest(`api_usage?id=in.(${ids.map(encodeURIComponent).join(",")})`, { method: "DELETE" });
 }
 
 // 오래된 기록은 표가 커지지 않게 지웁니다.
