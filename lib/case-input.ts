@@ -1,6 +1,6 @@
 // 담당자 API로 들어온 사건 입력값을 검사하고 정리합니다.
 // 글자 수·날짜 형식·개인정보 형태를 확인해, 문제가 있으면 화면에 보여 줄 안내 한 줄을 돌려줍니다.
-import { isDate } from "@/lib/cases";
+import { STAGES, isDate, isStage } from "@/lib/cases";
 import type { CaseInput } from "@/lib/db";
 import { personalInfoMessage } from "@/lib/privacy";
 
@@ -30,6 +30,14 @@ export function parseCaseInput(body: unknown, mode: "create" | "update"): Result
     if (value === null || value === "") data.docs_received_on = null;
     else if (isDate(value)) data.docs_received_on = value;
     else return { ok: false, error: "서류 접수일은 2026-10-29 같은 형식의 날짜로 입력해 주세요." };
+  }
+
+  // 진행 단계는 수정할 때만 바꿀 수 있습니다. 새 사건은 항상 "서류 접수"에서 시작합니다.
+  if (mode === "update" && "stage" in raw) {
+    if (!isStage(raw.stage)) {
+      return { ok: false, error: `진행 단계는 ${STAGES.map((s) => s.label).join("·")} 중 하나여야 합니다.` };
+    }
+    data.stage = raw.stage;
   }
 
   if (mode === "create" && !data.case_no) return { ok: false, error: "관리번호를 입력해 주세요." };
