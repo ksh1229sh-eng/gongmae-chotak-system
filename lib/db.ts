@@ -42,6 +42,8 @@ export class MissingDbConfigError extends Error {}
 export class DbConflictError extends Error {}
 // 글자 수·진행 단계 같은 표의 제약 조건에 맞지 않을 때
 export class DbInvalidError extends Error {}
+export class DbClosedCaseError extends Error {} // 종결된 사건에 미완료 할 일을 두려는 경우 (DB 오류 CL001)
+export class DbOpenTasksError extends Error {} // 미완료 할 일이 남은 사건을 종결하려는 경우 (DB 오류 CL002)
 
 function config() {
   const url = process.env.SUPABASE_URL;
@@ -74,6 +76,8 @@ async function rest<T>(path: string, init: { method?: string; body?: unknown } =
         return "";
       }
     })();
+    if (code === "CL001") throw new DbClosedCaseError("종결된 사건입니다.");
+    if (code === "CL002") throw new DbOpenTasksError("남은 할 일이 있습니다.");
     if (code === "23505") throw new DbConflictError("이미 있는 값입니다.");
     if (code === "23514" || code === "22P02" || code === "23502") throw new DbInvalidError("입력 형식이 맞지 않습니다.");
     throw new Error(`Supabase 요청 실패 (${res.status})`);
@@ -211,6 +215,12 @@ export async function deleteOldUsage(beforeIso: string): Promise<void> {
 export function dbErrorResponse(error: unknown) {
   if (error instanceof MissingDbConfigError) {
     return Response.json({ error: "서버에 Supabase 설정이 없습니다. .env를 확인해 주세요." }, { status: 500 });
+  }
+  if (error instanceof DbClosedCaseError) {
+    return Response.json({ error: "종결된 사건에는 할 일을 추가하거나 되돌릴 수 없습니다." }, { status: 409 });
+  }
+  if (error instanceof DbOpenTasksError) {
+    return Response.json({ error: "남은 할 일이 있어 종결할 수 없습니다. 목록을 새로 고쳐 확인해 주세요." }, { status: 409 });
   }
   if (error instanceof DbConflictError) {
     return Response.json({ error: "이미 등록된 값입니다. (예: 같은 관리번호)" }, { status: 409 });
