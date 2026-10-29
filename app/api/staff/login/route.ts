@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { countLoginFailures, dbErrorResponse, recordLoginFailure } from "@/lib/db";
+import { clearLoginAttempts, dbErrorResponse, isLoginLocked, lockLogin, recordLoginAttempt } from "@/lib/db";
 import {
   MissingStaffPasswordError,
   SESSION_COOKIE,
@@ -10,7 +10,7 @@ import {
   sessionCookieOptions,
 } from "@/lib/session";
 
-const MAX_FAILURES = 5; // 15분 안에 5번까지 틀릴 수 있고, 그 뒤로는 잠급니다.
+const MAX_ATTEMPTS = 5; // 15분 안에 비밀번호를 5번까지만 확인하고, 그 뒤로는 15분 동안 잠급니다.
 const WINDOW_MS = 15 * 60 * 1000;
 const FAILURE_DELAY_MS = 1000; // 틀릴 때마다 1초 늦게 답해 대입 속도를 늦춥니다.
 
@@ -26,16 +26,24 @@ export async function POST(request: Request) {
 
   try {
     const ipHash = hashIp(clientIp(request));
-    const since = new Date(Date.now() - WINDOW_MS).toISOString();
-    if ((await countLoginFailures(ipHash, since)) >= MAX_FAILURES) {
-      return Response.json({ error: "잠시 후 다시 시도해 주세요 (15분)." }, { status: 429 });
+    const locked = () => Response.json({ error: "잠시 후 다시 시도해 주세요 (15분)." }, { status: 429 });
+    const lockUntil = () => new Date(Date.now() + WINDOW_MS).toISOString();
+
+    if (await isLoginLocked(ipHash, new Date().toISOString())) return locked();
+
+    // 비밀번호를 보기 전에 시도부터 기록하고 순번을 받습니다. 한도를 넘은 시도는 비밀번호를 확인하지 않습니다.
+    const attempt = await recordLoginAttempt(ipHash, new Date(Date.now() - WINDOW_MS).toISOString());
+    if (attempt > MAX_ATTEMPTS) {
+      if (attempt === MAX_ATTEMPTS + 1) await lockLogin(ipHash, lockUntil());
+      return locked();
     }
 
     if (!checkStaffPassword(password)) {
-      await recordLoginFailure(ipHash);
+      if (attempt === MAX_ATTEMPTS) await lockLogin(ipHash, lockUntil()); // 5번째 실패 순간부터 15분
       await sleep(FAILURE_DELAY_MS);
       return Response.json({ error: "비밀번호가 맞지 않습니다." }, { status: 401 });
     }
+    await clearLoginAttempts(ipHash);
 
     (await cookies()).set(SESSION_COOKIE, createSessionToken(), sessionCookieOptions());
     return Response.json({ ok: true });

@@ -141,17 +141,38 @@ export async function listOpenTasks(): Promise<OpenTaskRow[]> {
   );
 }
 
-// ── 로그인 실패 기록 ──
+// ── 로그인 시도 기록 ──
+// 비밀번호를 확인하기 전에 시도를 먼저 기록하고 순번으로 판단합니다. 동시에 수십 개를 보내도 순번이 달라서
+// 앞의 한도만큼만 비밀번호 확인에 닿습니다. (횟수를 세고 나중에 기록하면 모두 0회로 보고 통과하던 문제)
 
-export async function countLoginFailures(ipHash: string, sinceIso: string): Promise<number> {
+export async function isLoginLocked(ipHash: string, nowIso: string): Promise<boolean> {
   const rows = await rest<{ id: string }[]>(
-    `login_attempts?select=id&ip_hash=eq.${encodeURIComponent(ipHash)}&failed_at=gte.${encodeURIComponent(sinceIso)}`,
+    `login_attempts?select=id&ip_hash=eq.${encodeURIComponent(ipHash)}&locked_until=gt.${encodeURIComponent(nowIso)}&limit=1`,
+  );
+  return rows.length > 0;
+}
+
+// 시도를 기록하고, 창 안에서 몇 번째 시도인지 돌려줍니다. (시각이 같으면 id 순)
+export async function recordLoginAttempt(ipHash: string, sinceIso: string): Promise<number> {
+  const [mine] = await rest<{ id: string; failed_at: string }[]>("login_attempts", {
+    method: "POST",
+    body: { ip_hash: ipHash },
+  });
+  const at = encodeURIComponent(mine.failed_at);
+  const rows = await rest<{ id: string }[]>(
+    `login_attempts?select=id&ip_hash=eq.${encodeURIComponent(ipHash)}&locked_until=is.null&failed_at=gte.${encodeURIComponent(sinceIso)}` +
+      `&or=(failed_at.lt.${at},and(failed_at.eq.${at},id.lte.${mine.id}))`,
   );
   return rows.length;
 }
 
-export async function recordLoginFailure(ipHash: string): Promise<void> {
-  await rest("login_attempts", { method: "POST", body: { ip_hash: ipHash } });
+export async function lockLogin(ipHash: string, untilIso: string): Promise<void> {
+  await rest("login_attempts", { method: "POST", body: { ip_hash: ipHash, locked_until: untilIso } });
+}
+
+// 로그인에 성공하면 그 접속지의 시도 기록을 지웁니다.
+export async function clearLoginAttempts(ipHash: string): Promise<void> {
+  await rest(`login_attempts?ip_hash=eq.${encodeURIComponent(ipHash)}`, { method: "DELETE" });
 }
 
 // ── 공개 API 사용 기록 (남용 방지용 횟수 제한) ──
