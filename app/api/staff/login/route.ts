@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { clearLoginAttempts, dbErrorResponse, isLoginLocked, lockLogin, recordLoginAttempt } from "@/lib/db";
 import {
+  MissingSessionSecretError,
   MissingStaffPasswordError,
   SESSION_COOKIE,
   checkStaffPassword,
@@ -48,8 +49,8 @@ export async function POST(request: Request) {
     (await cookies()).set(SESSION_COOKIE, createSessionToken(), sessionCookieOptions());
     return Response.json({ ok: true });
   } catch (error) {
-    if (error instanceof MissingStaffPasswordError) {
-      return Response.json({ error: "서버에 담당자 비밀번호가 설정되지 않았습니다. .env를 확인해 주세요." }, { status: 500 });
+    if (error instanceof MissingStaffPasswordError || error instanceof MissingSessionSecretError) {
+      return Response.json({ error: "로그인 설정에 문제가 있어 지금은 로그인할 수 없습니다. 관리자에게 알려 주세요." }, { status: 500 });
     }
     return dbErrorResponse(error);
   }

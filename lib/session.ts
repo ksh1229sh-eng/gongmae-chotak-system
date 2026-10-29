@@ -13,9 +13,18 @@ function staffPassword() {
   return pw;
 }
 
-// 서명 열쇠를 비밀번호에서 만들어, 비밀번호를 바꾸면 기존 로그인이 모두 풀리게 합니다.
+// 서명 열쇠는 비밀번호와 별개인 무작위 값(SESSION_SECRET)을 씁니다. 열쇠를 비밀번호에서 만들면 쿠키 하나만 손에 넣어도
+// 잠금 없이 오프라인에서 비밀번호를 대입해 볼 수 있기 때문입니다. 이 값을 바꾸면 기존 로그인이 모두 풀립니다.
+export class MissingSessionSecretError extends Error {}
+
+const MIN_SECRET_LENGTH = 32;
+
 function signingKey() {
-  return createHash("sha256").update(`staff-session:${staffPassword()}`).digest();
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < MIN_SECRET_LENGTH) {
+    throw new MissingSessionSecretError("SESSION_SECRET이 .env에 없거나 32자보다 짧습니다.");
+  }
+  return createHash("sha256").update(`staff-session:${secret}`).digest();
 }
 
 function sign(payload: string) {
@@ -46,7 +55,7 @@ export function verifySessionToken(token: string | undefined, nowMs: number = Da
   try {
     if (!safeEqual(sig, sign(exp))) return false;
   } catch {
-    return false; // 비밀번호 설정이 없으면 아무도 들어갈 수 없습니다.
+    return false; // 비밀번호나 서명 열쇠 설정이 없으면 아무도 들어갈 수 없습니다.
   }
   return Number(exp) * 1000 > nowMs;
 }
