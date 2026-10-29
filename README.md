@@ -39,6 +39,24 @@
 - 남은 할 일이 하나라도 있으면 사건을 종결할 수 없습니다(추가 말소 누락 방지). 이 규칙은 DB 트리거가 직접 지킵니다.
 - AI 요약은 사건마다 따로 만들고, 기록에 없는 날짜·숫자·지연/임박 표현이 나오면 코드가 걸러 냅니다.
 
+## 기획서(PRD)와 구현 대응표
+
+[PRD.md](PRD.md)의 기능이 코드의 어디에 있는지 정리했습니다. 주제는 하나입니다: **공매 소유권이전 촉탁 업무를 돕는 통합관리 시스템**(매수자용 챗봇 + 담당자용 사후관리·인수인계).
+
+| PRD 기능 | 화면·주소 | 구현 위치 |
+|---|---|---|
+| must 1 · 안내문·법령 근거 질의응답 | `/` | `app/ChatBot.tsx`, `app/api/chat/route.ts`, `lib/guide.ts`, `lib/law.ts` |
+| must 1 · 등기부 PDF 말소 판단·비용 계산 | `/` (등기부 첨부) | `app/api/registry/route.ts`, `lib/fees.ts`, `app/RegistryResult.tsx` |
+| must 1 · 국민주택채권 매입금액 | `/` (결과 카드의 입력칸) | `lib/fees.ts`, `app/RegistryResult.tsx` |
+| must 2 · 담당자 공용 비밀번호 보호 | `/staff/login` | `app/api/staff/login/route.ts`, `proxy.ts`, `lib/session.ts` |
+| must 2 · 사건 등록·진행 단계·할 일·메모·종결 | `/staff/cases` | `app/staff/(portal)/cases/`, `app/api/staff/cases/`, `lib/cases.ts` |
+| must 2 · 기한 알림(임박·지연) | `/staff` | `app/staff/(portal)/page.tsx`, `lib/cases.ts` |
+| must 2 · 남은 할 일이 있으면 종결 불가 | 사건 상세 [종결] | `app/api/staff/cases/[id]/close/route.ts`, `supabase/migrations/` (DB 트리거) |
+| must 2 · 인수인계 화면과 AI 요약 | `/staff/handover` | `app/staff/(portal)/handover/`, `app/api/staff/handover-summary/route.ts`, `lib/handover-summary.ts` |
+| must 2 · 업무 매뉴얼 | `/staff/manual` | `app/staff/(portal)/manual/`, `lib/guide.ts` |
+
+**일부러 만들지 않은 것 (PRD 5·6번에서 미룸):** 촉탁서 자동작성·서류 OCR·보완 체크(nice), 전자촉탁(장기 비전, 법적으로 아직 불가), 이메일·문자 알림, 개인별 로그인·권한. 이번 사이클은 "사건을 놓치지 않고, 후임자가 바로 이어받고, 매수자가 스스로 비용을 확인하는" 부분에 집중했습니다.
+
 ## 개인정보와 보안
 
 - 사건에는 매수자 이름·연락처·주민등록번호를 기록하지 않고(관리번호와 물건 요약만), 저장할 때와 AI로 보내기 전에 주민등록번호·전화번호 형태를 서버가 검사해 거부합니다.

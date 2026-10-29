@@ -111,7 +111,7 @@ export default function ChatBot() {
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-6">
       <header className="mb-4 space-y-1">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-xl font-bold">공매 소유권이전 상담 챗봇</h1>
+          <h1 className="text-xl font-bold">공매촉탁업무통합관리시스템</h1>
           {/* 담당자 화면 입구: 링크만 보이고, 들어가려면 공용 비밀번호가 필요합니다. */}
           <Link
             href="/staff"
@@ -120,6 +120,11 @@ export default function ChatBot() {
             담당자 화면 →
           </Link>
         </div>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          한국자산관리공사 압류재산(부동산) 공매의 소유권이전 촉탁 업무를 돕는 서비스입니다. 매수자는 아래 상담 챗봇을, 담당자는
+          오른쪽 위 &quot;담당자 화면&quot;에서 사건 사후관리·인수인계를 이용합니다.
+        </p>
+        <h2 className="pt-2 text-base font-semibold">매수자 상담 챗봇</h2>
         <p className="text-sm text-zinc-500">
           한국자산관리공사 「압류재산 소유권이전 준비서류 및 절차 안내」와 국민주택채권 관련 법령(주택도시기금법)만 근거로 답합니다. 부동산 공매만 안내해요.
         </p>
