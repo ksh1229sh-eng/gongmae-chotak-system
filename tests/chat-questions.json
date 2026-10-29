@@ -11,143 +11,324 @@
       "id": 1,
       "question": "잔금을 낸 다음에 무엇부터 준비해야 하나요?",
       "type": "answer",
-      "mustInclude": [["매각결정통지서"], ["잔대금 영수증", "잔금 영수증", "잔대금영수증"]],
+      "mustInclude": [
+        [
+          "매각결정통지서"
+        ],
+        [
+          "잔대금 영수증",
+          "잔금 영수증",
+          "잔대금영수증"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 2]
+      "pages": [
+        1,
+        2
+      ]
     },
     {
       "id": 2,
       "question": "말소 등록면허세는 어떻게 계산하나요?",
       "type": "answer",
-      "mustInclude": [["7,200", "7200"], ["말소할 건수", "말소 건수", "말소건수"]],
+      "mustInclude": [
+        [
+          "7,200",
+          "7200"
+        ],
+        [
+          "말소할 건수",
+          "말소 건수",
+          "말소건수"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 3]
+      "pages": [
+        1,
+        3
+      ]
     },
     {
       "id": 3,
       "question": "등기신청수수료는 얼마인가요?",
       "type": "answer",
-      "mustInclude": [["18,000", "18000"], ["4,000", "4000"]],
+      "mustInclude": [
+        [
+          "18,000",
+          "18000"
+        ],
+        [
+          "4,000",
+          "4000"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [4]
+      "pages": [
+        4
+      ]
     },
     {
       "id": 4,
       "question": "국민주택채권 매입금액은 과세표준으로 계산하나요?",
       "type": "answer",
-      "mustInclude": [["시가표준액"]],
+      "mustInclude": [
+        [
+          "시가표준액"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [3]
+      "pages": [
+        3
+      ]
     },
     {
       "id": 5,
       "question": "국민주택채권을 사지 않아도 되는 경우가 있나요?",
       "type": "answer",
-      "mustInclude": [["500만", "5백만"], ["2,000만", "2천만"], ["1,000만", "1천만"]],
+      "mustInclude": [
+        [
+          "500만",
+          "5백만"
+        ],
+        [
+          "2,000만",
+          "2천만"
+        ],
+        [
+          "1,000만",
+          "1천만"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [2, 3]
+      "pages": [
+        2,
+        3
+      ]
     },
     {
       "id": 6,
       "question": "국민주택채권은 어느 은행에서 살 수 있나요?",
       "type": "answer",
-      "mustInclude": [["우리은행"], ["신한은행"], ["국민은행"]],
+      "mustInclude": [
+        [
+          "우리은행"
+        ],
+        [
+          "신한은행"
+        ],
+        [
+          "국민은행"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 4]
+      "pages": [
+        1,
+        4
+      ]
     },
     {
       "id": 7,
       "question": "우표는 얼마짜리를 사야 하나요?",
       "type": "answer",
-      "mustInclude": [["4,230", "4230"], ["5,300", "5300"]],
+      "mustInclude": [
+        [
+          "4,230",
+          "4230"
+        ],
+        [
+          "5,300",
+          "5300"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 4]
+      "pages": [
+        1,
+        4
+      ]
     },
     {
       "id": 8,
       "question": "등기필증을 공사에 직접 가서 받으면 5,300원 우표도 필요한가요?",
       "type": "answer",
-      "mustInclude": [["필요하지 않", "불필요", "필요 없", "필요없"]],
+      "mustInclude": [
+        [
+          "필요하지 않",
+          "불필요",
+          "필요 없",
+          "필요없"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 4]
+      "pages": [
+        1,
+        4
+      ]
     },
     {
       "id": 9,
       "question": "취득세는 언제까지 내야 하나요?",
       "type": "answer",
-      "mustInclude": [["60일"], ["과태료"]],
+      "mustInclude": [
+        [
+          "60일"
+        ],
+        [
+          "과태료"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [2]
+      "pages": [
+        2
+      ]
     },
     {
       "id": 10,
       "question": "논이나 밭을 낙찰받았을 때 추가로 필요한 서류가 있나요?",
       "type": "answer",
-      "mustInclude": [["농지취득자격증명"]],
+      "mustInclude": [
+        [
+          "농지취득자격증명"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 2]
+      "pages": [
+        1,
+        2
+      ]
     },
     {
       "id": 11,
       "question": "서류는 언제 발급받은 것까지 낼 수 있나요?",
       "type": "answer",
-      "mustInclude": [["1개월", "한 달"]],
+      "mustInclude": [
+        [
+          "1개월",
+          "한 달"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [5]
+      "pages": [
+        5
+      ]
     },
     {
       "id": 12,
       "question": "서류를 사본이나 팩스로 내도 되나요?",
       "type": "answer",
-      "mustInclude": [["불가", "안 됩", "안됩", "받지 않", "할 수 없"], ["원본"]],
+      "mustInclude": [
+        [
+          "불가",
+          "안 됩",
+          "안됩",
+          "받지 않",
+          "할 수 없"
+        ],
+        [
+          "원본"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [5]
+      "pages": [
+        5
+      ]
     },
     {
       "id": 13,
       "question": "서류를 내고 나서 등기가 끝나기까지 얼마나 걸리나요?",
       "type": "answer",
-      "mustInclude": [["7일"], ["14일"]],
+      "mustInclude": [
+        [
+          "7일"
+        ],
+        [
+          "14일"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [5]
+      "pages": [
+        5
+      ]
     },
     {
       "id": 14,
       "question": "제가 직접 등기소에 가서 소유권이전등기를 해도 되나요?",
       "type": "answer",
-      "mustInclude": [["불가", "할 수 없", "안 됩", "안됩"], ["촉탁"]],
+      "mustInclude": [
+        [
+          "불가",
+          "할 수 없",
+          "안 됩",
+          "안됩"
+        ],
+        [
+          "촉탁"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [5]
+      "pages": [
+        5
+      ]
     },
     {
       "id": 15,
       "question": "대리인이 서류를 대신 접수하려면 무엇이 필요한가요?",
       "type": "answer",
-      "mustInclude": [["위임장"], ["인감증명서"]],
+      "mustInclude": [
+        [
+          "위임장"
+        ],
+        [
+          "인감증명서"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [5]
+      "pages": [
+        5
+      ]
     },
     {
       "id": 16,
       "question": "등기신청수수료를 인터넷으로 낼 수 있나요?",
       "type": "answer",
-      "mustInclude": [["인터넷등기소", "iros"]],
+      "mustInclude": [
+        [
+          "인터넷등기소",
+          "iros"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [4]
+      "pages": [
+        4
+      ]
     },
     {
       "id": 17,
       "question": "주민등록등본을 뗄 때 주의할 점이 있나요?",
       "type": "answer",
-      "mustInclude": [["뒷자리", "주민등록번호 전체", "주민번호 전체", "전체공개", "전체 공개"]],
+      "mustInclude": [
+        [
+          "뒷자리",
+          "주민등록번호 전체",
+          "주민번호 전체",
+          "전체공개",
+          "전체 공개"
+        ]
+      ],
       "mustNotInclude": [],
-      "pages": [1, 3]
+      "pages": [
+        1,
+        3
+      ]
     },
     {
       "id": 18,
       "question": "법원 경매로 낙찰받은 아파트 소유권이전은 어떻게 하나요?",
       "type": "out_of_scope",
-      "mustInclude": [["부동산 공매만"]],
+      "mustInclude": [
+        [
+          "부동산 공매만"
+        ]
+      ],
       "mustNotInclude": [],
       "pages": []
     },
@@ -155,7 +336,12 @@
       "id": 19,
       "question": "나중에 이 집을 팔면 양도소득세가 얼마나 나오나요?",
       "type": "no_info",
-      "mustInclude": [["확인된 자료에 없", "안내문에 없"]],
+      "mustInclude": [
+        [
+          "확인된 자료에 없",
+          "안내문에 없"
+        ]
+      ],
       "mustNotInclude": [],
       "pages": []
     },
@@ -163,9 +349,69 @@
       "id": 20,
       "question": "제 이름은 홍길동이고 주민번호는 800101-1234567입니다. 법인이 아니라 개인으로 샀는데 법인 등기사항증명서도 내야 하나요?",
       "type": "answer",
-      "mustInclude": [["필요하지 않", "필요 없", "필요없", "필요가 없", "불필요", "내지 않", "제출하지 않", "법인이 매수한 경우만"]],
-      "mustNotInclude": ["홍길동", "800101", "1234567"],
-      "pages": [1, 2]
+      "mustInclude": [
+        [
+          "필요하지 않",
+          "필요 없",
+          "필요없",
+          "필요가 없",
+          "불필요",
+          "내지 않",
+          "제출하지 않",
+          "법인이 매수한 경우만"
+        ]
+      ],
+      "mustNotInclude": [
+        "홍길동",
+        "800101",
+        "1234567"
+      ],
+      "pages": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 21,
+      "question": "국민주택채권은 어떤 법에 근거해서 사야 하는 건가요?",
+      "type": "law",
+      "mustInclude": [
+        [
+          "주택도시기금법"
+        ],
+        [
+          "제8조"
+        ]
+      ],
+      "mustNotInclude": [],
+      "pages": [
+        3
+      ]
+    },
+    {
+      "id": 22,
+      "question": "소유권이전등기 때 채권 매입 비율은 법령 어디에 정해져 있나요?",
+      "type": "law",
+      "mustInclude": [
+        [
+          "시행령"
+        ],
+        [
+          "별표"
+        ]
+      ],
+      "mustNotInclude": [],
+      "pages": [
+        3
+      ]
+    },
+    {
+      "id": 23,
+      "question": "국민주택채권 할인율은 법에서 정해 주나요?",
+      "type": "no_info",
+      "mustInclude": [],
+      "mustNotInclude": [],
+      "pages": []
     }
   ]
 }
