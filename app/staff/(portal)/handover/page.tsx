@@ -12,6 +12,7 @@ import {
   type AlertLevel,
 } from "@/lib/cases";
 import { listCases, type CaseWithTasks } from "@/lib/db";
+import { SummaryButton, SummaryProvider, SummarySlot } from "./HandoverSummary";
 
 export const metadata = { title: "인수인계 · 공매촉탁업무통합관리시스템" };
 
@@ -70,6 +71,8 @@ async function Handover() {
         <span className="text-amber-600 dark:text-amber-400">임박 {soon}</span>
       </p>
 
+      <SummaryButton />
+
       <ul className="space-y-3">
         {sorted.map((c) => {
           const memo = previewText(c.memo);
@@ -92,6 +95,7 @@ async function Handover() {
                 <span className="mr-2 text-xs text-zinc-500">메모</span>
                 {memo || "메모 없음"}
               </p>
+              <SummarySlot caseId={c.id} />
               <Link
                 href={`/staff/cases/${c.id}`}
                 className="inline-block rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
@@ -117,9 +121,11 @@ export default function StaffHandoverPage() {
           아직 종결하지 않은 사건을 가장 급한 할 일 순서로 보여 줍니다. 업무를 이어받을 때 위에서부터 확인하세요.
         </p>
       </div>
-      <Suspense fallback={<p className="text-sm text-zinc-500">불러오는 중…</p>}>
-        <Handover />
-      </Suspense>
+      <SummaryProvider>
+        <Suspense fallback={<p className="text-sm text-zinc-500">불러오는 중…</p>}>
+          <Handover />
+        </Suspense>
+      </SummaryProvider>
       <p className="text-sm">
         <Link href="/staff/manual" className="underline underline-offset-2">
           업무 매뉴얼 보기
