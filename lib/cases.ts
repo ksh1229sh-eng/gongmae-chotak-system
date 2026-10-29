@@ -34,7 +34,9 @@ export function stageLabel(key: string): string {
 // 존재하는 날짜인지까지 확인합니다 (예: 2026-02-30은 거부).
 export function isDate(value: unknown): value is string {
   if (typeof value !== "string" || !DATE_RE.test(value)) return false;
-  return new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  const date = new Date(`${value}T00:00:00Z`);
+  // 월이 13이거나 일이 32처럼 달력에 아예 없는 값은 Invalid Date라 toISOString이 오류를 던지므로 먼저 거릅니다.
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 // 서버가 어느 나라 시간대에서 돌든 "오늘"은 한국 날짜로 셉니다. (Vercel 서버는 UTC)
@@ -53,6 +55,23 @@ export function daysBetween(from: string, to: string): number {
 
 export function sendDeadline(docsReceivedOn: string): string {
   return addDays(docsReceivedOn, SEND_DEADLINE_DAYS);
+}
+
+type SendDeadlineTask = TaskLike & { id: string; auto_kind: string | null };
+
+// 서류 접수일을 넣거나 고칠 때 "촉탁서 발송 기한" 할 일을 어떻게 할지 정합니다. (사건당 1개)
+// - 아직 없으면 새로 만들고, 있는데 기한이 다르면 기한을 고치며 다시 미완료로 돌립니다 (접수일이 바뀌면 새 기한이 생긴 것).
+// - 이미 같은 기한이면 아무것도 하지 않습니다.
+export function planSendDeadline(
+  docsReceivedOn: string | null,
+  tasks: SendDeadlineTask[],
+): { action: "none" } | { action: "create"; due_on: string } | { action: "update"; id: string; due_on: string } {
+  if (!docsReceivedOn) return { action: "none" };
+  const due_on = sendDeadline(docsReceivedOn);
+  const existing = tasks.find((t) => t.auto_kind === "send_deadline");
+  if (!existing) return { action: "create", due_on };
+  if (existing.due_on === due_on) return { action: "none" };
+  return { action: "update", id: existing.id, due_on };
 }
 
 // 기한이 지나면 "지연", 오늘부터 7일 안이면 "임박", 그보다 멀면 "여유", 기한이 없으면 "없음"

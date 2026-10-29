@@ -1,5 +1,6 @@
 import { isUuid, parseCaseInput } from "@/lib/case-input";
 import { dbErrorResponse, getCase, updateCase } from "@/lib/db";
+import { syncSendDeadline } from "@/lib/send-deadline";
 
 const NOT_FOUND = () => Response.json({ error: "사건을 찾을 수 없습니다." }, { status: 404 });
 
@@ -31,7 +32,13 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/staff/case
       }
     }
     const updated = await updateCase(id, parsed.data);
-    return updated ? Response.json({ case: updated }) : NOT_FOUND();
+    if (!updated) return NOT_FOUND();
+    // 서류 접수일을 넣거나 고쳤으면 "촉탁서 발송 기한" 할 일을 만들거나 기한을 갱신합니다. (종결 사건은 제외)
+    const warning =
+      parsed.data.docs_received_on && !updated.closed_at
+        ? await syncSendDeadline(id, parsed.data.docs_received_on)
+        : null;
+    return Response.json({ case: updated, ...(warning ? { warning } : {}) });
   } catch (error) {
     return dbErrorResponse(error);
   }

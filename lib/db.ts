@@ -112,6 +112,14 @@ export async function createTask(caseId: string, input: TaskInput): Promise<Task
   return rows[0];
 }
 
+// 할 일 하나와 소속 사건의 종결 여부 (종결된 사건의 할 일은 바꾸지 못하게 할 때 씁니다)
+export async function getTask(id: string): Promise<(TaskRow & { cases: Pick<CaseRow, "id" | "closed_at"> }) | null> {
+  const rows = await rest<(TaskRow & { cases: Pick<CaseRow, "id" | "closed_at"> })[]>(
+    `tasks?select=*,cases!inner(id,closed_at)&id=eq.${encodeURIComponent(id)}`,
+  );
+  return rows[0] ?? null;
+}
+
 export async function updateTask(id: string, patch: Partial<Pick<TaskRow, "title" | "due_on" | "done_at">>): Promise<TaskRow | null> {
   const rows = await rest<TaskRow[]>(`tasks?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: patch });
   return rows[0] ?? null;

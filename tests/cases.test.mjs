@@ -10,6 +10,7 @@ import {
   isDate,
   isStage,
   nextTask,
+  planSendDeadline,
   sendDeadline,
   sortByUrgency,
   stageLabel,
@@ -34,6 +35,16 @@ test("날짜 더하기·차이: 월말과 윤년을 넘어도 정확", () => {
 
 test("촉탁서 발송 기한 = 서류 접수일 + 7일", () => {
   assert.equal(sendDeadline("2026-10-13"), "2026-10-20");
+});
+
+test("발송 기한 할 일: 없으면 만들고, 접수일이 바뀌면 기한 갱신, 같으면 그대로, 접수일이 없으면 손대지 않음", () => {
+  const auto = (due_on, done = false) => ({ id: "t1", title: "촉탁서 발송 기한", due_on, done_at: done ? "x" : null, auto_kind: "send_deadline" });
+  const manual = { id: "t2", title: "직접 만든 할 일", due_on: "2026-10-01", done_at: null, auto_kind: null };
+  assert.deepEqual(planSendDeadline("2026-10-13", []), { action: "create", due_on: "2026-10-20" });
+  assert.deepEqual(planSendDeadline("2026-10-13", [manual]), { action: "create", due_on: "2026-10-20" });
+  assert.deepEqual(planSendDeadline("2026-10-13", [auto("2026-10-20")]), { action: "none" });
+  assert.deepEqual(planSendDeadline("2026-10-15", [auto("2026-10-20", true)]), { action: "update", id: "t1", due_on: "2026-10-22" });
+  assert.deepEqual(planSendDeadline(null, [auto("2026-10-20")]), { action: "none" });
 });
 
 test("알림 경계: 어제 지연, 오늘~7일 뒤 임박, 8일 뒤 여유, 기한 없음", () => {
@@ -103,6 +114,10 @@ test("진행 단계와 날짜 형식 검사", () => {
   assert.equal(stageLabel("supplement"), "보완 요청");
   assert.equal(isDate("2026-10-29"), true);
   assert.equal(isDate("2026-02-30"), false);
+  assert.equal(isDate("2026-13-01"), false); // 달력에 없는 월·일은 오류 없이 false
+  assert.equal(isDate("2026-00-10"), false);
+  assert.equal(isDate("2026-10-32"), false);
+  assert.equal(isDate("2028-02-29"), true); // 윤년
   assert.equal(isDate("2026-1-5"), false);
   assert.equal(isDate(20261029), false);
 });
